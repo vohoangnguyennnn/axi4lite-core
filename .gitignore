@@ -1,0 +1,10 @@
+# Verilator build output
+/build/
+/obj_dir/
+
+# Waveform dumps
+*.fst
+*.vcd
+
+# Local code-analysis cache
+/.ua/
