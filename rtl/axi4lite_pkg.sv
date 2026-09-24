@@ -23,8 +23,11 @@ package axi4lite_pkg;
   } native_resp_e;
 
   // Map a native backend response onto the AXI response channel.
+  //
+  // The default branch is reachable for the reserved encoding and for X, so
+  // the case is intentionally not marked unique.
   function automatic axi_resp_e native_to_axi_resp(input native_resp_e resp);
-    unique case (resp)
+    case (resp)
       NATIVE_RESP_OKAY:       return AXI_RESP_OKAY;
       NATIVE_RESP_TARGET_ERR: return AXI_RESP_SLVERR;
       NATIVE_RESP_DECODE_ERR: return AXI_RESP_DECERR;
@@ -36,9 +39,10 @@ package axi4lite_pkg;
   //
   // EXOKAY is outside the project profile. Mapping it to TARGET_ERR allows
   // the native transaction to complete while a protocol checker reports the
-  // unsupported response.
-  function automatic native_resp_e axi_to_native_resp(input axi_resp_e resp);
-    unique case (resp)
+  // unsupported response. The input is a raw 2-bit bus value so X or any
+  // unexpected value falls into the default branch.
+  function automatic native_resp_e axi_to_native_resp(input logic [1:0] resp);
+    case (axi_resp_e'(resp))
       AXI_RESP_OKAY:   return NATIVE_RESP_OKAY;
       AXI_RESP_SLVERR: return NATIVE_RESP_TARGET_ERR;
       AXI_RESP_DECERR: return NATIVE_RESP_DECODE_ERR;

@@ -22,10 +22,12 @@ interface axi4lite_if #(
   logic                  WVALID;
   logic                  WREADY;
 
-  // Write response channel
-  axi_resp_e BRESP;
-  logic      BVALID;
-  logic      BREADY;
+  // Write response channel. Response buses use plain 2-bit vectors so
+  // Verilog/VHDL IP, VIP, and X values connect without enum casts; decode
+  // with axi_resp_e inside the design.
+  logic [1:0] BRESP;
+  logic       BVALID;
+  logic       BREADY;
 
   // Read address channel
   logic [ADDR_WIDTH-1:0] ARADDR;
@@ -35,7 +37,7 @@ interface axi4lite_if #(
 
   // Read data channel
   logic [DATA_WIDTH-1:0] RDATA;
-  axi_resp_e             RRESP;
+  logic [1:0]            RRESP;
   logic                  RVALID;
   logic                  RREADY;
 
@@ -138,15 +140,8 @@ interface axi4lite_if #(
       end
     end
 
-    if ((DATA_WIDTH % 8) != 0) begin : g_non_byte_data_width
-      initial begin
-        $fatal(1, "axi4lite_if: DATA_WIDTH must be byte-aligned, got %0d",
-               DATA_WIDTH);
-      end
-    end
-
     if (((DATA_WIDTH == 32) || (DATA_WIDTH == 64)) &&
-        (ADDR_WIDTH < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
+        (int'(ADDR_WIDTH) < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
       initial begin
         $fatal(1,
                "axi4lite_if: ADDR_WIDTH (%0d) is too small for DATA_WIDTH (%0d)",

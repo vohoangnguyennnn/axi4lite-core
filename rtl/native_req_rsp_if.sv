@@ -125,16 +125,8 @@ interface native_req_rsp_if #(
       end
     end
 
-    if ((DATA_WIDTH % 8) != 0) begin : g_non_byte_data_width
-      initial begin
-        $fatal(1,
-               "native_req_rsp_if: DATA_WIDTH must be byte-aligned, got %0d",
-               DATA_WIDTH);
-      end
-    end
-
     if (((DATA_WIDTH == 32) || (DATA_WIDTH == 64)) &&
-        (ADDR_WIDTH < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
+        (int'(ADDR_WIDTH) < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
       initial begin
         $fatal(
           1,

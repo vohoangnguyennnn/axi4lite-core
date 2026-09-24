@@ -1,3 +1,6 @@
+// Reset: ARESETn is applied asynchronously but must be deasserted
+// synchronously to ACLK, as required by the AMBA AXI specification. Drive it
+// from a reset synchronizer in the ACLK domain.
 module axi4lite_master_adapter #(
   parameter int unsigned ADDR_WIDTH = 32,
   parameter int unsigned DATA_WIDTH = 32
@@ -156,18 +159,8 @@ module axi4lite_master_adapter #(
       end
     end
 
-    if ((DATA_WIDTH % 8) != 0) begin : g_non_byte_data_width
-      initial begin
-        $fatal(
-          1,
-          "axi4lite_master_adapter: DATA_WIDTH must be byte-aligned, got %0d",
-          DATA_WIDTH
-        );
-      end
-    end
-
     if (((DATA_WIDTH == 32) || (DATA_WIDTH == 64)) &&
-        (ADDR_WIDTH < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
+        (int'(ADDR_WIDTH) < $clog2(DATA_WIDTH / 8))) begin : g_invalid_addr_width
       initial begin
         $fatal(
           1,
@@ -181,22 +174,22 @@ module axi4lite_master_adapter #(
 
   // AXI and native interface widths must match the adapter parameters.
   initial begin : p_check_interface_widths
-    if (($bits(m_axi.AWADDR) != ADDR_WIDTH) ||
-        ($bits(m_axi.ARADDR) != ADDR_WIDTH) ||
-        ($bits(native.wr_req_addr) != ADDR_WIDTH) ||
-        ($bits(native.rd_req_addr) != ADDR_WIDTH)) begin
+    if (($bits(m_axi.AWADDR) != int'(ADDR_WIDTH)) ||
+        ($bits(m_axi.ARADDR) != int'(ADDR_WIDTH)) ||
+        ($bits(native.wr_req_addr) != int'(ADDR_WIDTH)) ||
+        ($bits(native.rd_req_addr) != int'(ADDR_WIDTH))) begin
       $fatal(1, "axi4lite_master_adapter: address width mismatch");
     end
 
-    if (($bits(m_axi.WDATA) != DATA_WIDTH) ||
-        ($bits(m_axi.RDATA) != DATA_WIDTH) ||
-        ($bits(native.wr_req_data) != DATA_WIDTH) ||
-        ($bits(native.rd_rsp_data) != DATA_WIDTH)) begin
+    if (($bits(m_axi.WDATA) != int'(DATA_WIDTH)) ||
+        ($bits(m_axi.RDATA) != int'(DATA_WIDTH)) ||
+        ($bits(native.wr_req_data) != int'(DATA_WIDTH)) ||
+        ($bits(native.rd_rsp_data) != int'(DATA_WIDTH))) begin
       $fatal(1, "axi4lite_master_adapter: data width mismatch");
     end
 
-    if (($bits(m_axi.WSTRB) != STRB_WIDTH) ||
-        ($bits(native.wr_req_strb) != STRB_WIDTH)) begin
+    if (($bits(m_axi.WSTRB) != int'(STRB_WIDTH)) ||
+        ($bits(native.wr_req_strb) != int'(STRB_WIDTH))) begin
       $fatal(1, "axi4lite_master_adapter: strobe width mismatch");
     end
   end
