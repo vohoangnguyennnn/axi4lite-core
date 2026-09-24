@@ -57,9 +57,17 @@ module axi4lite_protocol_checker #(
     end
   end
 
-  always_ff @(posedge axi.ACLK) begin
-    aresetn_q <= axi.ARESETn;
+  // Reset style matches the adapters (asynchronous assert). At every sampling
+  // edge aresetn_q still holds ARESETn as seen on the previous edge.
+  always_ff @(posedge axi.ACLK or negedge axi.ARESETn) begin
+    if (!axi.ARESETn) begin
+      aresetn_q <= 1'b0;
+    end else begin
+      aresetn_q <= 1'b1;
+    end
+  end
 
+  always_ff @(posedge axi.ACLK or negedge axi.ARESETn) begin
     if (!axi.ARESETn) begin
       aw_cnt_q <= '0;
       w_cnt_q  <= '0;

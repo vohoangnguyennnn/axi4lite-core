@@ -5,17 +5,18 @@
 # runs every scenario. A legal scenario must print "SELFTEST PASS"; an illegal
 # scenario must stop on the named assertion.
 #
-# Usage: verification/tests/checker_selftest/run.sh [build-dir]
+# Usage: verification/tests/checker/run.sh [build-dir] [seed]
+# The scenarios are deterministic, so the seed is accepted and ignored.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-BUILD_DIR="${1:-$ROOT/build/checker_selftest}"
+BUILD_DIR="${1:-$ROOT/build/checker}"
 
 SOURCES=(
   "$ROOT/rtl/axi4lite_pkg.sv"
   "$ROOT/rtl/axi4lite_if.sv"
   "$ROOT/verification/checkers/axi4lite_protocol_checker.sv"
-  "$ROOT/verification/tests/checker_selftest/axi4lite_checker_selftest_tb.sv"
+  "$ROOT/verification/tests/checker/axi4lite_checker_selftest_tb.sv"
 )
 
 # scenario : expected result with STRICT_PROFILE=1 : with STRICT_PROFILE=0
@@ -41,7 +42,10 @@ CASES=(
 build() {
   local strict="$1"
   local dir="$BUILD_DIR/strict$strict"
-  verilator --binary --timing --assert -Wall \
+  # SYNCASYNCNET is waived because the bench drives ARESETn from clocked
+  # stimulus while the checker uses it as an asynchronous reset. The design
+  # itself is linted without waivers by scripts/run_lint.sh.
+  verilator --binary --timing --assert -Wall -Wno-SYNCASYNCNET \
     --top-module axi4lite_checker_selftest_tb \
     "-GSTRICT_PROFILE=1'b$strict" \
     -Mdir "$dir" -o sim "${SOURCES[@]}" > "$dir.build.log" 2>&1 || {
