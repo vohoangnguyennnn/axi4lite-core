@@ -8,6 +8,8 @@
 #
 # Builds the bench at DATA_WIDTH 32 and 64 and runs every variant below.
 # Run N of a build uses seed <seed> + N, printed for reproduction.
+# Each run writes functional coverage (cover properties) to
+# <build-dir>/dw<width>.<variant>.dat for scripts/coverage_report.py.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 BUILD_DIR="${1:-$ROOT/build/$SUITE}"
@@ -44,6 +46,8 @@ VARIANTS=(
 )
 
 mkdir -p "$BUILD_DIR"
+# Coverage from an earlier run must not count toward this one.
+rm -f "$BUILD_DIR"/*.dat
 
 build() {
   local data_width="$1"
@@ -55,10 +59,13 @@ build() {
   #   BLKSEQ        behavioral models update bookkeeping with blocking
   #                 assignments inside clocked processes
   #   WIDTHTRUNC    random stimulus is truncated from 32/64-bit $urandom
-  if ! verilator --binary --timing --assert -Wall \
+  if ! verilator --cc --exe --build -j "$(nproc)" --timing --assert \
+         --coverage-user -Wall \
          -Wno-SYNCASYNCNET -Wno-BLKSEQ -Wno-WIDTHTRUNC \
+         -CFLAGS "-DTB_TOP_CLASS=V$TOP" \
          --top-module "$TOP" "-GDATA_WIDTH=$data_width" \
-         -Mdir "$dir" -o sim "${SOURCES[@]}" > "$dir.build.log" 2>&1; then
+         -Mdir "$dir" -o sim "${SOURCES[@]}" \
+         "$ROOT/verification/tests/common/sim_main.cpp" > "$dir.build.log" 2>&1; then
     cat "$dir.build.log"
     echo "BUILD FAILED: $SUITE DATA_WIDTH=$data_width" >&2
     return 1
@@ -84,8 +91,8 @@ for data_width in 32 64; do
     log="$BUILD_DIR/dw$data_width.$name.log"
 
     set +e
-    ( "$BUILD_DIR/dw$data_width/sim" "+verilator+seed+$run_seed" "${plusargs[@]}"; exit $? ) \
-      > "$log" 2>&1
+    ( "$BUILD_DIR/dw$data_width/sim" "+verilator+seed+$run_seed" "${plusargs[@]}" \
+        "+COVERAGE_FILE=$BUILD_DIR/dw$data_width.$name.dat"; exit $? ) > "$log" 2>&1
     status=$?
     set -e
 
