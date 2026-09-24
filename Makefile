@@ -10,7 +10,7 @@ REGRESSION_BUILD_ROOT ?= $(DEFAULT_BUILD_DIR)
 
 help:
 	@printf '%s\n' \
-		'Usage: make <target> [SEED=<1..4294967295>]' \
+		'Usage: make <target> [SEED=<1..2147483647>]' \
 		'' \
 		'Targets:' \
 		'  lint           Lint all 32-bit and 64-bit configurations' \
