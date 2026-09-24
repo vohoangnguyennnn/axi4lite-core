@@ -19,7 +19,7 @@ module native_req_rsp_checker (
 
   // Native transaction ownership starts at the request handshake and ends at
   // the matching response handshake. Read and write contexts are independent.
-  always_ff @(posedge native.ACLK) begin
+  always_ff @(posedge native.ACLK or negedge native.ARESETn) begin
     if (!native.ARESETn) begin
       wr_outstanding_q <= 1'b0;
       rd_outstanding_q <= 1'b0;
