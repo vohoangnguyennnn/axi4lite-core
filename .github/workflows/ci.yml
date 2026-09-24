@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Regression seed (1..2147483647); empty picks one from the run ID"
+        required: false
+
+jobs:
+  verify:
+    name: Lint, regression, and coverage
+    # Ubuntu 24.04 packages Verilator 5.020, the version the flow is tested with.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Verilator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends verilator
+          verilator --version
+
+      - name: Lint
+        run: make lint
+
+      - name: Pick regression seed
+        run: |
+          seed="${{ github.event.inputs.seed }}"
+          if [ -z "$seed" ]; then
+            seed=$(( ${{ github.run_id }} % 2147483647 + 1 ))
+          fi
+          echo "SEED=$seed" >> "$GITHUB_ENV"
+          echo "Regression seed: $seed (reproduce locally with: make coverage SEED=$seed)"
+
+      - name: Regression and functional coverage
+        run: make coverage SEED="$SEED"
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-logs
+          path: |
+            build/**/*.log
+            build/**/*.dat
+          if-no-files-found: ignore

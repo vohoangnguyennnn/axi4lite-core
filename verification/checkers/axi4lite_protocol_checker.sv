@@ -326,6 +326,62 @@ module axi4lite_protocol_checker #(
       axi.RVALID && !axi.RREADY
   );
 
+  // Every response code the AXI4-Lite profile allows, on both channels.
+  c_bresp_okay: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      b_hs && (axi.BRESP == AXI_RESP_OKAY)
+  );
+
+  c_bresp_slverr: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      b_hs && (axi.BRESP == AXI_RESP_SLVERR)
+  );
+
+  c_bresp_decerr: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      b_hs && (axi.BRESP == AXI_RESP_DECERR)
+  );
+
+  c_rresp_okay: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      r_hs && (axi.RRESP == AXI_RESP_OKAY)
+  );
+
+  c_rresp_slverr: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      r_hs && (axi.RRESP == AXI_RESP_SLVERR)
+  );
+
+  c_rresp_decerr: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      r_hs && (axi.RRESP == AXI_RESP_DECERR)
+  );
+
+  // Write strobe shapes: no lanes, some lanes, all lanes.
+  c_wstrb_none: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      w_hs && (axi.WSTRB == '0)
+  );
+
+  c_wstrb_partial: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      w_hs && (axi.WSTRB != '0) && !(&axi.WSTRB)
+  );
+
+  c_wstrb_all: cover property (
+    @(posedge axi.ACLK) disable iff (!axi.ARESETn)
+      w_hs && (&axi.WSTRB)
+  );
+
+  // Reset asserted while a transaction was in flight. Deliberately not
+  // disabled by reset. $past sees ARESETn and the counters as sampled on the
+  // previous edge, before the asynchronous reset cleared them.
+  c_reset_during_transaction: cover property (
+    @(posedge axi.ACLK)
+      !axi.ARESETn && $past(axi.ARESETn) &&
+      $past((aw_cnt_q != '0) || (w_cnt_q != '0) || (ar_cnt_q != '0))
+  );
+
   c_concurrent_read_write: cover property (
     @(posedge axi.ACLK) disable iff (!axi.ARESETn)
       (ar_hs || (ar_cnt_q != '0)) &&

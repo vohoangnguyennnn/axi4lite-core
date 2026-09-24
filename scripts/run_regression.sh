@@ -4,7 +4,8 @@
 # Environment:
 #   TEST_SUITE             all | checker | master | slave | loopback (default: all)
 #   REGRESSION_BUILD_ROOT  build output directory (default: <repo>/build)
-#   SEED                   random seed, 1..4294967295 (default: time-based)
+#   SEED                   random seed, 1..2147483647 (default: time-based);
+#                          the upper bound is Verilator's +verilator+seed+ limit
 #
 # Each suite lives in verification/tests/<suite>/run.sh and is called as
 #   run.sh <build-dir> <seed>
@@ -18,10 +19,10 @@ BUILD_ROOT="${REGRESSION_BUILD_ROOT:-$ROOT/build}"
 ALL_SUITES=(checker master slave loopback)
 
 if [[ -z "${SEED:-}" ]]; then
-  SEED=$(( $(date +%s) % 4294967295 + 1 ))
+  SEED=$(( $(date +%s) % 2147483647 + 1 ))
 fi
-if ! [[ "$SEED" =~ ^[0-9]+$ ]] || (( SEED < 1 || SEED > 4294967295 )); then
-  echo "run_regression: SEED must be an integer in 1..4294967295, got '$SEED'" >&2
+if ! [[ "$SEED" =~ ^[0-9]+$ ]] || (( SEED < 1 || SEED > 2147483647 )); then
+  echo "run_regression: SEED must be an integer in 1..2147483647, got '$SEED'" >&2
   exit 1
 fi
 
